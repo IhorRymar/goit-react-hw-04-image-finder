@@ -6,14 +6,11 @@ import css from '../Gallery/Styles.module.css';
 const modal = document.querySelector('#modal');
 
 class Modal extends Component {
-  static defaultProps = {
-    alt: 'Large image',
-  };
-
   static propTypes = {
-    url: PropTypes.string.isRequired,
-    alt: PropTypes.string.isRequired,
+    title: PropTypes.string,
     onClose: PropTypes.func.isRequired,
+    currentImageUrl: PropTypes.string,
+    currentImageDescription: PropTypes.string,
   };
 
   componentDidMount() {
@@ -24,25 +21,29 @@ class Modal extends Component {
     window.removeEventListener('keydown', this.handleKeyDown);
   }
 
+  handleClickBackdrop = evt => {
+    if (evt.target === evt.currentTarget) {
+      this.props.onClose();
+    }
+  };
+
   handleKeyDown = evt => {
     if (evt.code === 'Escape') {
       this.props.onClose();
     }
   };
 
-  handleBackdropClick = evt => {
-    if (evt.currentTarget === evt.target) {
-      this.props.onClose();
-    }
-  };
-
   render() {
-    const { url, alt } = this.props;
+    const { currentImageUrl, currentImageDescription } = this.props;
 
     return createPortal(
-      <div className={css.overlay} onClick={this.handleBackdropClick}>
+      <div className={css.overlay} onClick={this.handleClickBackdrop}>
         <div className={css.modal}>
-          <img src={url} alt={alt} />
+          <img
+            src={currentImageUrl}
+            alt={currentImageDescription}
+            loading="lazy"
+          />
         </div>
       </div>,
       modal

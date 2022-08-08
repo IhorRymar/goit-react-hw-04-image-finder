@@ -2,12 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import css from '../Gallery/Styles.module.css';
 
-const Button = ({ handleLoadMore }) => {
+const Button = ({ incrementPage }) => {
   return (
     <button
       type="button"
       className={css.loadMore}
-      onClick={() => handleLoadMore()}
+      onClick={() => incrementPage()}
     >
       Load more
     </button>
@@ -15,7 +15,7 @@ const Button = ({ handleLoadMore }) => {
 };
 
 Button.propTypes = {
-  handleLoadMore: PropTypes.func.isRequired,
+  incrementPage: PropTypes.func.isRequired,
 };
 
 export default Button;

@@ -2,23 +2,29 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import css from '../Gallery/Styles.module.css';
 
-const ImageGalleryItem = ({ src, alt, onClick }) => {
+const ImageGalleryItem = ({
+  description,
+  smallImage,
+  largeImage,
+  openModal,
+}) => {
   return (
-    <li className={css.imageGalleryItem}>
+    <li className={css.imageGalleryItem} onClick={openModal}>
       <img
-        src={src}
-        alt={alt}
+        src={smallImage}
+        alt={description}
+        data-large={largeImage}
         className={css.imageGalleryItemImage}
-        onClick={onClick}
       />
     </li>
   );
 };
 
-ImageGalleryItem.propTypes = {
-  src: PropTypes.string.isRequired,
-  alt: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
+ImageGalleryItem.prototype = {
+  description: PropTypes.string,
+  smallImage: PropTypes.string.isRequired,
+  largeImage: PropTypes.string.isRequired,
+  openModal: PropTypes.func.isRequired,
 };
 
 export default ImageGalleryItem;

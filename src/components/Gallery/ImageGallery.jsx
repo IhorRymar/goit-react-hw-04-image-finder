@@ -7,12 +7,13 @@ const ImageGallery = ({ images, openModal }) => {
   return (
     <>
       <ul className={css.imageGallery}>
-        {images.map(({ webformatURL, tags, largeImageURL }, idx) => (
+        {images.map(({ id, description, smallImage, largeImage }) => (
           <ImageGalleryItem
-            key={idx}
-            src={webformatURL}
-            alt={tags}
-            onClick={() => openModal({ largeImageURL, tags })}
+            key={id}
+            description={description}
+            smallImage={smallImage}
+            largeImage={largeImage}
+            openModal={openModal}
           />
         ))}
       </ul>
@@ -20,15 +21,15 @@ const ImageGallery = ({ images, openModal }) => {
   );
 };
 
-ImageGallery.propTypes = {
+ImageGallery.prototype = {
   images: PropTypes.arrayOf(
     PropTypes.shape({
-      tags: PropTypes.string,
-      webformatURL: PropTypes.string.isRequired,
-      largeImageURL: PropTypes.string.isRequired,
+      id: PropTypes.number.isRequired,
+      description: PropTypes.string,
+      smallImage: PropTypes.string.isRequired,
+      largeImage: PropTypes.string.isRequired,
     })
-  ),
-  openModal: PropTypes.func.isRequired,
+  ).isRequired,
 };
 
 export default ImageGallery;

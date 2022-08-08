@@ -7,123 +7,134 @@ import Modal from './Gallery/Modal';
 import Button from './Gallery/Button';
 import Spiner from './Gallery/Spiner';
 import fetchImages from './Gallery/ApiService';
-import ErrorSearch from './Gallery/Error';
-
-const PER_PAGE = 12;
-const Status = {
-  IDLE: 'idle',
-  PENDING: 'pending',
-  RESOLVED: 'resolved',
-  REJECTED: 'rejected',
-};
 
 class App extends Component {
   state = {
-    status: Status.IDLE,
-    searchQuery: '',
-    images: [],
-    totalHits: 0,
+    query: '',
     page: 1,
-    error: null,
+    imagesOnPage: 0,
+    totalImages: 0,
+    isLoading: false,
     showModal: false,
-    modalImgProps: { url: '', alt: '' },
+    images: null,
+    error: null,
+    currentImageUrl: null,
+    currentImageDescription: null,
   };
 
-  async componentDidUpdate(_, prevState) {
-    const prevQuery = prevState.searchQuery;
-    const nextQuery = this.state.searchQuery;
+  componentDidUpdate(prevProps, prevState) {
+    const { query, page } = this.state;
 
-    if (prevQuery !== nextQuery) {
-      await this.reset();
-      this.setState({ status: Status.PENDING });
-      await this.fetchImages(nextQuery);
+    if (prevState.query !== query) {
+      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+
+      fetchImages(query)
+        .then(({ hits, totalHits }) => {
+          const imagesArray = hits.map(hit => ({
+            id: hit.id,
+            description: hit.tags,
+            smallImage: hit.webformatURL,
+            largeImage: hit.largeImageURL,
+          }));
+
+          return this.setState({
+            page: 1,
+            images: imagesArray,
+            imagesOnPage: imagesArray.length,
+            totalImages: totalHits,
+          });
+        })
+        .catch(error => this.setState({ error }))
+        .finally(() =>
+          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
+        );
+    }
+
+    if (prevState.page !== page && page !== 1) {
+      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+
+      fetchImages(query, page)
+        .then(({ hits }) => {
+          const imagesArray = hits.map(hit => ({
+            id: hit.id,
+            description: hit.tags,
+            smallImage: hit.webformatURL,
+            largeImage: hit.largeImageURL,
+          }));
+
+          return this.setState(({ images, imagesOnPage }) => {
+            return {
+              images: [...images, ...imagesArray],
+              imagesOnPage: imagesOnPage + imagesArray.length,
+            };
+          });
+        })
+        .catch(error => this.setState({ error }))
+        .finally(() =>
+          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
+        );
     }
   }
 
-  fetchImages = query => {
-    const { page } = this.state;
-    fetchImages(query, page, PER_PAGE)
-      .then(({ hits, totalHits }) => {
-        if (hits.length === 0) {
-          return Promise.reject(new Error('Oops! Nothing found'));
-        }
-
-        this.setState(prevState => ({
-          images: [...prevState.images, ...hits],
-          totalHits,
-          status: Status.RESOLVED,
-        }));
-      })
-      .catch(error => this.setState({ error, status: Status.REJECTED }));
-  };
-
-  reset = () => {
-    this.setState({ page: 1, images: [] });
-  };
-
-  handleLoadMoreBtnClick = async () => {
-    const query = this.state.searchQuery;
-    await this.incrementPage();
-    this.fetchImages(query);
-    this.scrollDown();
+  getSearchRequest = query => {
+    this.setState({ query });
   };
 
   incrementPage = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
-
-  scrollDown = () => {
-    setTimeout(() => {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        left: 0,
-        behavior: 'smooth',
-      });
-    }, 500);
-  };
-
-  handleSearchFormSubmit = searchQuery => {
-    this.setState({ searchQuery });
+    this.setState(({ page }) => ({ page: page + 1 }));
   };
 
   toggleModal = () => {
     this.setState(({ showModal }) => ({ showModal: !showModal }));
   };
 
-  handleImgClick = ({ largeImageURL: url, tags: alt }) => {
-    this.setState({ modalImgProps: { url, alt } });
-    this.toggleModal();
+  openModal = evt => {
+    const currentImageUrl = evt.target.dataset.large;
+    const currentImageDescription = evt.target.alt;
+
+    if (evt.target.nodeName === 'IMG') {
+      this.setState(({ showModal }) => ({
+        showModal: !showModal,
+        currentImageUrl: currentImageUrl,
+        currentImageDescription: currentImageDescription,
+      }));
+    }
   };
 
   render() {
     const {
-      status,
       images,
-      error,
+      imagesOnPage,
+      totalImages,
+      isLoading,
       showModal,
-      page,
-      totalHits,
-      modalImgProps: { url, alt },
+      currentImageUrl,
+      currentImageDescription,
     } = this.state;
 
-    const totalPages = Math.ceil(totalHits / PER_PAGE);
+    const getSearchRequest = this.getSearchRequest;
+    const incrementPage = this.incrementPage;
+    const openModal = this.openModal;
+    const toggleModal = this.toggleModal;
 
     return (
       <>
-        <Searchbar onSubmit={this.handleSearchFormSubmit} />
-        {status === 'idle' && <></>}
-        {status === 'pending' && <Spiner />}
-        {status === 'rejected' && <ErrorSearch message={error.message} />}
-        {status === 'resolved' && (
-          <>
-            {showModal && (
-              <Modal onClose={this.toggleModal} url={url} alt={alt} />
-            )}
-            <ImageGallery images={images} openModal={this.handleImgClick} />
-            {totalPages !== page && (
-              <Button handleLoadMore={this.handleLoadMoreBtnClick} />
-            )}
-          </>
+        <Searchbar onSubmit={getSearchRequest} />
+
+        {images && <ImageGallery images={images} openModal={openModal} />}
+
+        {isLoading && <Spiner />}
+
+        {imagesOnPage >= 12 && imagesOnPage < totalImages && (
+          <Button incrementPage={incrementPage} />
+        )}
+
+        {showModal && (
+          <Modal
+            onClose={toggleModal}
+            currentImageUrl={currentImageUrl}
+            currentImageDescription={currentImageDescription}
+          />
         )}
 
         <ToastContainer />
