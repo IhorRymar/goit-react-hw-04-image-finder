@@ -1,54 +1,50 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import css from '../Gallery/Styles.module.css';
 
 const modal = document.querySelector('#modal');
 
-class Modal extends Component {
-  static propTypes = {
-    title: PropTypes.string,
-    onClose: PropTypes.func.isRequired,
-    currentImageUrl: PropTypes.string,
-    currentImageDescription: PropTypes.string,
-  };
+const Modal = ({ currentImageUrl, currentImageDescription, onClose }) => {
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.code === 'Escape') {
+        onClose();
+      }
+    };
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
+    window.addEventListener('keydown', handleKeyDown);
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
-  handleClickBackdrop = evt => {
-    if (evt.target === evt.currentTarget) {
-      this.props.onClose();
+  const handleClickBackdrop = e => {
+    if (e.target === e.currentTarget) {
+      onClose();
     }
   };
 
-  handleKeyDown = evt => {
-    if (evt.code === 'Escape') {
-      this.props.onClose();
-    }
-  };
+  return createPortal(
+    <div className={css.overlay} onClick={handleClickBackdrop}>
+      <div className={css.modal}>
+        <img
+          src={currentImageUrl}
+          alt={currentImageDescription}
+          loading="lazy"
+        />
+      </div>
+    </div>,
+    modal
+  );
+};
 
-  render() {
-    const { currentImageUrl, currentImageDescription } = this.props;
-
-    return createPortal(
-      <div className={css.overlay} onClick={this.handleClickBackdrop}>
-        <div className={css.modal}>
-          <img
-            src={currentImageUrl}
-            alt={currentImageDescription}
-            loading="lazy"
-          />
-        </div>
-      </div>,
-      modal
-    );
-  }
-}
+Modal.propTypes = {
+  title: PropTypes.string,
+  onClose: PropTypes.func.isRequired,
+  currentImageUrl: PropTypes.string,
+  currentImageDescription: PropTypes.string,
+};
 
 export default Modal;
